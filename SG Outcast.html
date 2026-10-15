@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warp Type</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f4f2; --panel: #ffffff; --ink: #111; --muted: #777; --line: #ddd; --accent: #111;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161616; --panel: #1f1f1f; --ink: #eee; --muted: #8a8a8a; --line: #333; --accent: #fff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--ink); height: 100vh; display: flex; }
+  aside { width: 320px; flex: none; background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 16px; }
+  main { flex: 1; min-width: 0; position: relative; }
+  #stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  #stage svg { width: 100%; height: 100%; display: block; }
+  h1 { font-size: 15px; margin: 0 0 12px; letter-spacing: .02em; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
+  textarea { width: 100%; height: 90px; font: 600 14px/1.3 system-ui; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); resize: vertical; }
+  .line { border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+  .line input[type=text] { width: 100%; font: 600 14px system-ui; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+  .line .meta { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .line .meta .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .line .meta button { padding: 3px 8px; font-size: 12px; }
+  .line .cols { display: flex; flex-wrap: wrap; row-gap: 4px; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--muted); align-items: center; }
+  .line .cols label { display: flex; gap: 4px; align-items: center; }
+  .line .cols input { width: 28px; height: 22px; padding: 0; border: 1px solid var(--line); background: none; }
+  .line.over { border-color: var(--ink); }
+  .row { display: grid; grid-template-columns: 1fr 52px; gap: 2px 8px; align-items: center; margin-bottom: 8px; }
+  .row label { grid-column: 1 / -1; display: flex; justify-content: space-between; color: var(--muted); }
+  .row input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row output { font-variant-numeric: tabular-nums; color: var(--ink); }
+  .check { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  button, .btn { font: inherit; padding: 8px 12px; border: 1px solid var(--ink); border-radius: 6px; background: var(--ink); color: var(--bg); cursor: pointer; }
+  button.ghost, .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btns > * { flex: 1; text-align: center; white-space: nowrap; }
+  #drop { border: 1px dashed var(--line); border-radius: 6px; padding: 10px; text-align: center; color: var(--muted); cursor: pointer; }
+  #drop.over { border-color: var(--ink); color: var(--ink); }
+  #fontname { margin-top: 6px; color: var(--muted); font-size: 12px; }
+  .colors { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+  .colors input { width: 36px; height: 26px; padding: 0; border: 1px solid var(--line); background: none; }
+  @media (max-width: 760px) { body { flex-direction: column-reverse; height: auto; } aside { width: 100%; } main { height: 60vh; } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Warp Type</h1>
+  <button id="resetAll" class="ghost" style="width:100%">Reset all effects</button>
+
+
+  <h2>Lines</h2>
+  <div id="lines"></div>
+  <button id="addLine" class="ghost" style="width:100%;margin-top:6px">+ Add line</button>
+
+  <h2>Default font</h2>
+  <div id="drop">Drop a .ttf / .otf / .woff here<br>or click to choose</div>
+  <input id="fontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+  <div id="fontname">Loading default font…</div>
+  <input id="linefontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+
+  <h2>Outline &amp; shadow</h2>
+  <div class="check"><label>Outline &amp; shadow colour</label><input type="color" id="outlineC" value="#000000" style="margin-left:auto;width:36px;height:24px;padding:0"></div>
+  <div class="check"><input type="checkbox" id="outlineOn"><label for="outlineOn">Outline</label></div>
+  <div class="check"><input type="checkbox" id="shadowOn"><label for="shadowOn">Extruded shadow</label></div>
+  <div id="styleControls"></div>
+
+  <h2>Layout</h2>
+  <div class="check"><input type="checkbox" id="fit"><label for="fit">Stretch every line to the same width (sizes differ)</label></div>
+  <div class="check"><input type="checkbox" id="align" checked><label for="align">Centre all lines (off = left)</label></div>
+  <div id="layoutControls"></div>
+
+  <h2>Height variation points</h2>
+  <div id="hedgeControls"></div>
+  <svg id="edgeEd" viewBox="0 0 280 170" style="width:100%;touch-action:none;background:var(--bg);border:1px solid var(--line);border-radius:6px"></svg>
+  <div class="check" style="margin-top:6px"><input type="checkbox" id="edgeSmooth"><label for="edgeSmooth">Smooth curve between points</label></div>
+  <div class="btns" style="margin-bottom:6px">
+    <button id="edgeRand" class="ghost">Randomize points</button>
+    <button id="edgeFlat" class="ghost">Flatten</button>
+  </div>
+  <div style="color:var(--muted);font-size:12px">Drag handles up/down. Top row = top edge of the text, bottom row = bottom edge. Double-click a handle to zero it.</div>
+
+  <h2>Distortion</h2>
+  <div id="warpControls"></div>
+
+  <h2>Variation</h2>
+  <div class="row"><label>Seed <output id="seedOut">1</output></label></div>
+  <div class="btns" style="margin-bottom:8px">
+    <button id="shuffle">Randomize all</button>
+    <button id="reseed" class="ghost">New seed only</button>
+  </div>
+
+  <h2>Export</h2>
+  <div class="btns">
+    <button id="exportSvg">Download SVG</button>
+    <button id="exportPng" class="ghost">Download PNG</button>
+  </div>
+  <div class="colors">
+    <label>Default fill <input type="color" id="fg" value="#000000"></label>
+    <label>Background <input type="color" id="bg" value="#f4f4f2"></label>
+    <label><input type="checkbox" id="transparent"> Transparent</label>
+  </div>
+</aside>
+
+<main><div id="stage"></div></main>
+
+<script>
+/* ---------- controls ---------- */
+const DEFS = {
+  layout: [
+    ['glyphJ',  'Letter height jitter', 0, 0.4, 0.01, 0],
+  ],
+  warp: [
+    ['amp',     'Wave amount (capped: letters keep ≥ 50% height)',      0, 0.6, 0.005, 0],
+    ['freq',    'Wave frequency',   0, 4, 0.01, 0],
+    ['phase',   'Top / bottom phase offset', -3.14, 3.14, 0.01, 0],
+    ['side',    'Sideways wave',    0, 0.01, 0.0005, 0],
+    ['curve',   'Zigzag ↔ curvy',   0, 1, 0.01, 0.5],
+    ['skew',    'Skew',             -0.6, 0.6, 0.005, 0],
+  ],
+  style: [
+    ['outW',    'Outline width',    1, 40, 0.5, 6],
+    ['depth',   'Shadow depth',     0, 0.5, 0.005, 0.2],
+    ['angle',   'Shadow angle (°)', 0, 360, 1, 60],
+  ],
+  hedge: [
+    ['hPoints', 'Number of points',     2, 12, 1, 5],
+    ['hrange',  'Height range',         0, 0.5, 0.005, 0.3],
+  ],
+};
+const S = {};            // current values
+Object.assign(S, { lineOff: 0, gap: 0.15, track: 0, rigid: 1, rot: 0, speed: 0 });   // fixed, not user-adjustable
+const ranges = {};
+const EDGE = { top: [0, 0, 0, 0, 0], bot: [0, 0, 0, 0, 0] };   // per-point edge offsets, -1..1 (positive = edge moves down)
+function evalEdge(p, u) {
+  const n = p.length; if (n < 2) return p[0] || 0;
+  const f = Math.min(Math.max(u, 0), 1) * (n - 1), i = Math.min(Math.floor(f), n - 2); let w = f - i;
+  if ($('edgeSmooth') && $('edgeSmooth').checked) w = (1 - Math.cos(w * Math.PI)) / 2;
+  return p[i] * (1 - w) + p[i + 1] * w;
+}
+for (const group in DEFS) {
+  const host = document.getElementById(group + 'Controls');
+  for (const [key, label, min, max, step, val] of DEFS[group]) {
+    S[key] = val; ranges[key] = [min, max, step];
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<label>${label}<output></output></label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}">`;
+    const inp = row.querySelector('input'), out = row.querySelector('output');
+    out.textContent = val;
+    inp.addEventListener('input', () => { S[key] = +inp.value; out.textContent = (+inp.value).toFixed(step < 0.01 ? 3 : 2); onChange(group); });
+    row._set = v => { inp.value = v; S[key] = +v; out.textContent = (+v).toFixed(step < 0.01 ? 3 : 2); };
+    S['_row_' + key] = row;
+    host.appendChild(row);
+  }
+}
+
+/* ---------- state ---------- */
+let font = null, seed = 1, geom = null, dirtyGeom = true, t = 0, last = performance.now();
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(NS, 'svg');
+const bgRect = document.createElementNS(NS, 'rect');
+const layerG = document.createElementNS(NS, 'g');
+svg.append(bgRect, layerG); stage.appendChild(svg);
+svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+function rng(s) { return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let x = Math.imul(s ^ s >>> 15, 1 | s); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+
+function onChange(group) {
+  if (group === 'layout') dirtyGeom = true;
+  needsDraw = true;
+}
+let needsDraw = true;
+const lines = [];   // {text, font, fontName}
+const linesEl = $('lines');
+function renderLines() {
+  linesEl.innerHTML = '';
+  lines.forEach((ln, i) => {
+    const d = document.createElement('div'); d.className = 'line';
+    d.innerHTML = `<input type="text" spellcheck="false"><div class="meta"><span class="fn"></span><button class="ghost" data-a="font">Font…</button><button class="ghost" data-a="reset">Default</button><button class="ghost" data-a="del">✕</button></div><div class="cols"><label style="flex:1">Size <input type="range" min="0.3" max="2.5" step="0.01" data-scale style="width:100%;height:auto;border:0;accent-color:var(--accent)"></label><output data-scaleout style="min-width:34px;text-align:right;color:var(--ink)"></output></div><div class="cols"><label style="flex:1">Spacing <input type="range" min="-0.1" max="0.5" step="0.005" data-track style="width:100%;height:auto;border:0;accent-color:var(--accent)"></label><output data-trackout style="min-width:34px;text-align:right;color:var(--ink)"></output></div><div class="cols"><label style="flex:1">Height <input type="range" min="-1.5" max="1.5" step="0.01" data-dy style="width:100%;height:auto;border:0;accent-color:var(--accent)"></label><output data-dyout style="min-width:34px;text-align:right;color:var(--ink)"></output></div><div class="cols"><label>Fill <input type="color" data-c="fill"></label><label>Outline &amp; shadow <input type="color" data-c="outline"></label><button class="ghost" data-a="colreset" style="margin-left:auto;padding:2px 6px;font-size:11px" title="Follow the default colours">↺</button></div><div class="cols"><label>Show outline <select data-om><option value="">default</option><option value="on">on</option><option value="off">off</option></select></label><label>shadow <select data-sm><option value="">default</option><option value="on">on</option><option value="off">off</option></select></label><label>Align <select data-al><option value="">default</option><option value="0">left</option><option value="0.5">center</option><option value="1">right</option></select></label><label style="margin-right:8px"><input type="checkbox" data-front style="width:auto;height:auto"> In front</label></div>`;
+    const DEF = { fill: 'fg', outline: 'outlineC' };
+    const sync = () => d.querySelectorAll('[data-c]').forEach(ci => { ci.value = ln[ci.dataset.c] || $(DEF[ci.dataset.c]).value; });
+    d._sync = sync; sync();
+    const om = d.querySelector('[data-om]'), sm = d.querySelector('[data-sm]');
+    om.value = ln.outlineMode || ''; sm.value = ln.shadowMode || '';
+    om.onchange = () => { ln.outlineMode = om.value || null; needsDraw = true; };
+    sm.onchange = () => { ln.shadowMode = sm.value || null; needsDraw = true; };
+    const al = d.querySelector('[data-al]'); al.value = ln.align || ''; al.onchange = () => { ln.align = al.value || null; dirtyGeom = needsDraw = true; };
+    const fr = d.querySelector('[data-front]'); fr.checked = !!ln.front; fr.onchange = () => { ln.front = fr.checked; needsDraw = true; };
+    const sl = d.querySelector('[data-scale]'), so = d.querySelector('[data-scaleout]');
+    sl.value = ln.scale; so.textContent = (+ln.scale).toFixed(2) + '×';
+    sl.oninput = () => { ln.scale = +sl.value; so.textContent = ln.scale.toFixed(2) + '×'; dirtyGeom = needsDraw = true; };
+    const tk = d.querySelector('[data-track]'), to = d.querySelector('[data-trackout]');
+    tk.value = ln.track; to.textContent = (+ln.track).toFixed(3);
+    tk.oninput = () => { ln.track = +tk.value; to.textContent = ln.track.toFixed(3); dirtyGeom = needsDraw = true; };
+    tk.ondblclick = () => { ln.track = 0; tk.value = 0; to.textContent = '0.000'; dirtyGeom = needsDraw = true; };
+    const dyS = d.querySelector('[data-dy]'), dyO = d.querySelector('[data-dyout]');
+    dyS.value = ln.dy; dyO.textContent = (+ln.dy).toFixed(2);
+    dyS.oninput = () => { ln.dy = +dyS.value; dyO.textContent = ln.dy.toFixed(2); dirtyGeom = needsDraw = true; };
+    dyS.ondblclick = () => { ln.dy = 0; dyS.value = 0; dyO.textContent = '0.00'; dirtyGeom = needsDraw = true; };
+    sl.ondblclick = () => { ln.scale = 1; sl.value = 1; so.textContent = '1.00×'; dirtyGeom = needsDraw = true; };
+    d.querySelectorAll('[data-c]').forEach(ci => ci.oninput = () => { ln[ci.dataset.c] = ci.value; needsDraw = true; });
+    d.querySelector('[data-a=colreset]').onclick = () => { ln.fill = ln.outline = ln.shadow = null; sync(); needsDraw = true; };
+    const inp = d.querySelector('input'); inp.value = ln.text;
+    inp.oninput = () => { ln.text = inp.value; dirtyGeom = needsDraw = true; };
+    d.querySelector('.fn').textContent = ln.font ? ln.fontName : 'default font';
+    d.querySelector('[data-a=font]').onclick = () => { pendingLine = ln; $('linefontfile').click(); };
+    d.querySelector('[data-a=reset]').onclick = () => { ln.font = null; ln.fontName = ''; renderLines(); dirtyGeom = needsDraw = true; };
+    d.querySelector('[data-a=del]').onclick = () => { lines.splice(i, 1); renderLines(); dirtyGeom = needsDraw = true; };
+    d.ondragover = e => { e.preventDefault(); e.stopPropagation(); d.classList.add('over'); };
+    d.ondragleave = () => d.classList.remove('over');
+    d.ondrop = e => { e.preventDefault(); e.stopPropagation(); d.classList.remove('over'); setLineFont(ln, e.dataTransfer.files[0]); };
+    linesEl.appendChild(d);
+  });
+}
+let pendingLine = null;
+function setLineFont(ln, f) {
+  if (!f) return;
+  f.arrayBuffer().then(b => { try { ln.font = opentype.parse(b); ln.fontName = f.name; renderLines(); dirtyGeom = needsDraw = true; } catch (e) { alert('Could not read that font (use ttf/otf/woff).'); } });
+}
+$('linefontfile').onchange = e => { setLineFont(pendingLine, e.target.files[0]); e.target.value = ''; };
+$('addLine').onclick = () => { lines.push({ text: '', font: null, fontName: '', fill: null, outline: null, shadow: null, scale: 1, track: 0, dy: 0, outlineMode: null, shadowMode: null, align: null, front: false }); renderLines(); linesEl.lastChild.querySelector('input').focus(); };
+['OUTCAST'].forEach((t, i) => lines.push({ text: t, font: null, fontName: '', fill: null, outline: null, shadow: null, scale: 1, track: 0, dy: 0, outlineMode: null, shadowMode: null, align: null, front: false }));
+renderLines();
+$('align').addEventListener('change', () => { dirtyGeom = true; needsDraw = true; });
+$('fit').addEventListener('change', () => { dirtyGeom = true; needsDraw = true; });
+['fg', 'outlineC'].forEach(id => $(id).addEventListener('input', () => [...linesEl.children].forEach(r => r._sync && r._sync())));
+['fg', 'bg', 'transparent', 'outlineOn', 'outlineC', 'shadowOn'].forEach(id => $(id).addEventListener('input', () => needsDraw = true));
+
+/* ---------- font loading ---------- */
+async function loadFontBuffer(buf, name) {
+  try {
+    font = opentype.parse(buf);
+    $('fontname').textContent = name;
+    dirtyGeom = true; needsDraw = true;
+  } catch (e) { $('fontname').textContent = 'Could not read that font (woff2 is not supported — use ttf/otf/woff).'; }
+}
+fetch('https://cdn.jsdelivr.net/npm/@fontsource/anton@5/files/anton-latin-400-normal.woff')
+  .then(r => r.arrayBuffer()).then(b => { if (!font) loadFontBuffer(b, 'Anton (default)'); })
+  .catch(() => $('fontname').textContent = 'Default font failed to load — upload a font file.');
+const drop = $('drop');
+drop.onclick = () => $('fontfile').click();
+$('fontfile').onchange = e => readFont(e.target.files[0]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); readFont(e.dataTransfer.files[0]); };
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) readFont(e.dataTransfer.files[0]); });
+function readFont(f) { if (f) f.arrayBuffer().then(b => loadFontBuffer(b, f.name)); }
+
+/* ---------- geometry (laid out in a flat block, before warping) ---------- */
+function buildGeom() {
+  const active = lines.filter(l => l.text.trim().length);
+  if (!font || !active.length) return null;
+  const R = rng(seed * 7919 + 13);
+  const FS = 1000;
+  const track = S.track * FS;
+  const fit = $('fit').checked;
+
+  // 1. measure each line
+  const meas = active.map(ln => {
+    const font_ = ln.font || font, upm = font_.unitsPerEm;
+    const capH = ((font_.tables.os2 && font_.tables.os2.sCapHeight) || 0.7 * upm) * FS / upm;
+    const glyphs = font_.stringToGlyphs(ln.text);
+    let x = 0; const items = [];
+    glyphs.forEach((g, i) => {
+      items.push({ g, x });
+      x += g.advanceWidth * FS / upm;
+      if (i < glyphs.length - 1) x += font_.getKerningValue(g, glyphs[i + 1]) * FS / upm + (ln.track || 0) * FS;
+    });
+    return { items, width: Math.max(x, 1), capH, ln };
+  });
+  const sc_ = m => m.ln.scale || 1;
+  const W = fit ? 1000 : Math.max(...meas.map(m => m.width * sc_(m)));
+  const step = W / 140;
+  const contours = [], glyphsOut = [];
+  let top = 0, lastGap = 0;
+  const avgScale = meas.reduce((a, m) => a + (fit ? W / m.width : 1) * sc_(m), 0) / meas.length;
+
+  meas.forEach(m => {
+    const s = (fit ? W / m.width : 1) * sc_(m);
+    const capH = m.capH, base = top + capH * s;
+    const offX = (R() - 0.5) * 2 * S.lineOff * W + (W - m.width * s) * (m.ln.align ? +m.ln.align : ($('align').checked ? 0.5 : 0));
+    m.items.forEach(({ g, x }) => {
+      const jy = 1 + (R() - 0.5) * 2 * S.glyphJ;
+      const jd = (R() - 0.5) * 2 * S.glyphJ * capH * s * 0.5;
+      const cmds = g.getPath(x, 0, FS).commands;
+      let cur = null, start = null, pts = null; const gStart = contours.length;
+      const yOff = (m.ln.dy || 0) * capH * avgScale;
+      const P = (px, py) => [offX + px * s, base + py * s * jy + jd + yOff];
+      const push = (px, py) => pts.push(...P(px, py));
+      const lineTo = (x1, y1) => {
+        const dx = x1 - cur[0], dy = y1 - cur[1], n = Math.max(1, Math.ceil(Math.hypot(dx, dy) * s / step));
+        for (let i = 1; i <= n; i++) push(cur[0] + dx * i / n, cur[1] + dy * i / n);
+        cur = [x1, y1];
+      };
+      const flush = () => { if (pts && pts.length > 4) contours.push(pts); pts = null; };
+      for (const c of cmds) {
+        if (c.type === 'M') { flush(); pts = []; cur = start = [c.x, c.y]; push(c.x, c.y); }
+        else if (c.type === 'L') lineTo(c.x, c.y);
+        else if (c.type === 'Q') {
+          const [x0, y0] = cur; const n = 10;
+          for (let i = 1; i <= n; i++) { const u = i / n, v = 1 - u;
+            push(v*v*x0 + 2*v*u*c.x1 + u*u*c.x, v*v*y0 + 2*v*u*c.y1 + u*u*c.y); }
+          cur = [c.x, c.y];
+        } else if (c.type === 'C') {
+          const [x0, y0] = cur; const n = 14;
+          for (let i = 1; i <= n; i++) { const u = i / n, v = 1 - u;
+            push(v*v*v*x0 + 3*v*v*u*c.x1 + 3*v*u*u*c.x2 + u*u*u*c.x, v*v*v*y0 + 3*v*v*u*c.y1 + 3*v*u*u*c.y2 + u*u*u*c.y); }
+          cur = [c.x, c.y];
+        } else if (c.type === 'Z') { if (cur && start) lineTo(start[0], start[1]); flush(); }
+      }
+      flush();
+      if (contours.length > gStart) {
+        const cs = contours.slice(gStart); let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+        for (const c of cs) for (let i = 0; i < c.length; i += 2) { x0 = Math.min(x0, c[i]); x1 = Math.max(x1, c[i]); y0 = Math.min(y0, c[i+1]); y1 = Math.max(y1, c[i+1]); }
+        glyphsOut.push({ contours: cs, ln: m.ln, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 });
+      }
+    });
+    lastGap = S.gap * capH * avgScale; top = base + lastGap;
+  });
+  const H = top - lastGap, capH = meas[0].capH;
+  return { contours, glyphs: glyphsOut, W, H, capH };
+}
+
+/* ---------- warp ---------- */
+function warpPoints(geo, phi, wseed) {
+  const { W, H } = geo;
+  const R = rng(wseed * 31 + 5);
+  const o1 = R() * 6.28, o2 = R() * 6.28, o3 = R() * 6.28;
+  let A = 0;
+  const rot = S.rot * Math.PI / 180, cr = Math.cos(rot), sr = Math.sin(rot);
+  const cx = W / 2, cy = H / 2;
+  const TAU = Math.PI * 2;
+  const tri = a => { const f = a / TAU - Math.floor(a / TAU); return 1 - 4 * Math.abs(f - 0.5); };
+  const sin = a => (1 - S.curve) * tri(a) + S.curve * Math.sin(a);
+  // limit the wave so no letter is squashed below 50% of its height (taller is fine)
+  let lim = Infinity;
+  for (let k = 0; k <= 200; k++) {
+    const u = k / 200, th = TAU * S.freq * u + phi + o1, th2 = TAU * S.freq * 2.3 * u + phi * 1.7 + o2;
+    const g = (sin(th + S.phase) + 0.35 * sin(th2 + S.phase)) - (sin(th) + 0.35 * sin(th2));      // height change per unit wave amount
+    const e = S.hrange * (evalEdge(EDGE.bot, u) - evalEdge(EDGE.top, u));                          // height change from the edge points
+    if (g < 0) lim = Math.min(lim, (0.5 + e) / -g);
+  }
+  lim = Math.max(0, lim);
+  const ampMax = Math.min(0.6, Math.floor(Math.min(lim, 0.6) / 0.005 + 1e-9) * 0.005);
+  A = Math.min(S.amp, ampMax) * H;
+  { const row = S._row_amp, inp = row.querySelector('input');
+    if (+inp.max !== ampMax) inp.max = ampMax;
+    if (S.amp > ampMax) row._set(+ampMax.toFixed(3)); }
+  const F = (x, y) => {
+    const u = x / W, v = y / H;
+    const top = A * (sin(TAU * S.freq * u + phi + o1) + 0.35 * sin(TAU * S.freq * 2.3 * u + phi * 1.7 + o2)) + H * S.hrange * evalEdge(EDGE.top, u);
+    const bot = A * (sin(TAU * S.freq * u + phi + o1 + S.phase) + 0.35 * sin(TAU * S.freq * 2.3 * u + phi * 1.7 + o2 + S.phase))
+              + H * S.hrange * evalEdge(EDGE.bot, u);
+    const yy = top + (H + bot - top) * v;
+    const xx = x + S.skew * (v - 0.5) * H + S.side * W * sin(TAU * v * 1.3 + phi + o2);
+    const dx = xx - cx, dy = yy - cy;
+    return [cx + dx * cr - dy * sr, cy + dx * sr + dy * cr];
+  };
+  const out = [], e = 4, k = S.rigid;
+  // per glyph: follow the warp with an affine map (keeps curves as curves), then blend the remaining local bending by (1-k)
+  for (const g of geo.glyphs) {
+    const p0 = F(g.cx, g.cy), px = F(g.cx + e, g.cy), py = F(g.cx, g.cy + e);
+    const a = (px[0] - p0[0]) / e, b = (px[1] - p0[1]) / e, c2 = (py[0] - p0[0]) / e, d = (py[1] - p0[1]) / e;
+    for (const c of g.contours) {
+      const o = new Array(c.length);
+      for (let i = 0; i < c.length; i += 2) {
+        const lx = c[i] - g.cx, ly = c[i + 1] - g.cy;
+        const ax = p0[0] + a * lx + c2 * ly, ay = p0[1] + b * lx + d * ly;
+        if (k < 1) { const p = F(c[i], c[i + 1]); o[i] = ax + (1 - k) * (p[0] - ax); o[i + 1] = ay + (1 - k) * (p[1] - ay); }
+        else { o[i] = ax; o[i + 1] = ay; }
+      }
+      o.ln = g.ln; out.push(o);
+    }
+  }
+  return out;
+}
+function toPath(contours) {
+  let d = '';
+  for (const c of contours) {
+    d += 'M' + c[0].toFixed(1) + ' ' + c[1].toFixed(1);
+    for (let i = 2; i < c.length; i += 2) d += 'L' + c[i].toFixed(1) + ' ' + c[i + 1].toFixed(1);
+    d += 'Z';
+  }
+  return d;
+}
+function bbox(contours) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const c of contours) for (let i = 0; i < c.length; i += 2) {
+    if (c[i] < x0) x0 = c[i]; if (c[i] > x1) x1 = c[i];
+    if (c[i+1] < y0) y0 = c[i+1]; if (c[i+1] > y1) y1 = c[i+1];
+  }
+  return [x0, y0, x1, y1];
+}
+
+/* ---------- layers: shadow extrusion, outline, fill ---------- */
+function sweepPath(contours, dx, dy) {
+  let d = '';
+  for (const c of contours) {
+    const n = c.length / 2;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const ax = c[2*i], ay = c[2*i+1], bx = c[2*j], by = c[2*j+1];
+      const qx = [ax, bx, bx + dx, ax + dx], qy = [ay, by, by + dy, ay + dy];
+      let area = 0; for (let k = 0; k < 4; k++) { const l = (k + 1) % 4; area += qx[k] * qy[l] - qx[l] * qy[k]; }
+      if (Math.abs(area) < 1e-6) continue;
+      const o = area > 0 ? [0, 1, 2, 3] : [3, 2, 1, 0];
+      d += 'M' + o.map(k => qx[k].toFixed(1) + ' ' + qy[k].toFixed(1)).join('L') + 'Z';
+    }
+  }
+  return d;
+}
+function shifted(contours, dx, dy) { return contours.map(c => { const o = c.map((v, i) => v + (i % 2 ? dy : dx)); o.ln = c.ln; return o; }); }
+function buildLayers(warped) {
+  const fill = $('fg').value, oc = $('outlineC').value;
+  const gOutline = $('outlineOn').checked, gShadow = $('shadowOn').checked && S.depth > 0;
+  const mode = (v, g) => v === 'on' ? true : v === 'off' ? false : g;      // per-line override of the global switch
+  const isOutline = ln => mode(ln && ln.outlineMode, gOutline), isShadow = ln => mode(ln && ln.shadowMode, gShadow) && S.depth > 0;
+  const W = geom.W, A = warped;
+  const sw = S.outW * 2;       // shadow outline: centred stroke, the shadow fill covers the inner half
+  const els = []; let extra = [0, 0];
+  const lineObjs = [...new Set(A.map(c => c.ln))];
+  const part = ln => A.filter(c => c.ln === ln);
+  const col = (ln, k, def) => (ln && ln[k]) || def;
+  let dx = 0, dy = 0;
+  const lineObjs0 = [...new Set(A.map(c => c.ln))];
+  if (lineObjs0.some(isShadow)) { const L = S.depth * W * 0.3, ang = S.angle * Math.PI / 180; dx = Math.cos(ang) * L; dy = Math.sin(ang) * L; extra = [dx, dy]; }
+  // stacking: lines flagged "in front" are drawn last, each group as shadows first and then lettering
+  for (const group of [lineObjs.filter(l => !l.front), lineObjs.filter(l => l.front)]) {
+    for (const ln of group) if (isShadow(ln)) {
+      const P = part(ln), oc2 = col(ln, 'outline', oc), sc2 = oc2;
+      const sweep = sweepPath(P, dx, dy), end = toPath(shifted(P, dx, dy));
+      if (isOutline(ln)) { els.push({ d: sweep, stroke: oc2, sw }); els.push({ d: end, stroke: oc2, sw }); }
+      els.push({ d: sweep, fill: sc2 }); els.push({ d: end, fill: sc2 });
+    }
+    for (const ln of group) {
+      const P = part(ln);
+      els.push({ d: toPath(P), fill: col(ln, 'fill', fill) });
+      if (isOutline(ln)) {
+        const oc2 = col(ln, 'outline', oc);
+        els.push({ d: toPath(P), stroke: oc2, sw: S.outW });
+      }
+    }
+  }
+  const bb = bbox(A), pad = lineObjs0.some(isOutline) ? sw / 2 : 0;
+  const box = [Math.min(bb[0], bb[0] + extra[0]) - pad, Math.min(bb[1], bb[1] + extra[1]) - pad,
+               Math.max(bb[2], bb[2] + extra[0]) + pad, Math.max(bb[3], bb[3] + extra[1]) + pad];
+  return { els, box };
+}
+function elString(e) {
+  if (e.raw) return e.raw;
+  return `<path d="${e.d}" fill="${e.fill || 'none'}"` + (e.stroke ? ` stroke="${e.stroke}" stroke-width="${e.sw}" stroke-linejoin="round"` : '') + (e.order ? ' paint-order="stroke fill"' : '') + '/>';
+}
+
+/* ---------- render loop ---------- */
+function draw() {
+  if (dirtyGeom) { geom = buildGeom(); dirtyGeom = false; }
+  if (!geom) return;
+  const warped = warpPoints(geom, t, seed);
+  const { els, box } = buildLayers(warped);
+  layerG.innerHTML = els.map(elString).join('');
+  const m = Math.max(geom.W, geom.H) * 0.35 + (($('shadowOn').checked ? S.depth * geom.W * 0.3 : 0));
+  const vx = -m, vy = -m, vw = geom.W + 2 * m, vh = geom.H + 2 * m;
+  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+  bgRect.setAttribute('x', vx); bgRect.setAttribute('y', vy); bgRect.setAttribute('width', vw); bgRect.setAttribute('height', vh);
+  bgRect.setAttribute('fill', $('transparent').checked ? 'none' : $('bg').value);
+  svg._warped = warped;
+}
+function frame(now) {
+  const dt = (now - last) / 1000; last = now;
+  if (needsDraw) { needsDraw = false; draw(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- reset ---------- */
+$('resetAll').onclick = () => {
+  for (const group in DEFS) for (const [key, , , , , val] of DEFS[group]) S['_row_' + key]._set(val);
+  const checks = { fit: false, outlineOn: false, shadowOn: false, align: true, transparent: false };
+  for (const id in checks) $(id).checked = checks[id];
+  const colors = { fg: '#000000', bg: '#f4f4f2', outlineC: '#000000' };
+  for (const id in colors) $(id).value = colors[id];
+  lines.forEach(l => { l.fill = l.outline = l.shadow = null; l.outlineMode = l.shadowMode = l.align = null; });
+  renderLines();
+  [...linesEl.children].forEach(r => r._sync && r._sync());
+  $('edgeSmooth').checked = false; resampleEdges(); flattenEdges();
+  t = 0; setSeed(1); dirtyGeom = true; needsDraw = true;
+};
+
+/* ---------- height-variation point editor ---------- */
+const edSvg = $('edgeEd'), EW = 280, PAD = 30, TOPY = 55, BOTY = 115, SC = 38;
+function resampleEdges() {
+  const n = S.hPoints;
+  for (const k of ['top', 'bot']) {
+    const old = EDGE[k]; if (old.length === n) continue;
+    EDGE[k] = Array.from({ length: n }, (_, i) => evalEdgeRaw(old, n === 1 ? 0 : i / (n - 1)));
+  }
+  drawEdgeEditor(); needsDraw = true;
+}
+function evalEdgeRaw(p, u) { const n = p.length, f = u * (n - 1), i = Math.min(Math.floor(f), n - 2); const w = f - i; return p[i] * (1 - w) + p[i + 1] * w; }
+function drawEdgeEditor() {
+  const n = EDGE.top.length, X = i => PAD + (EW - 2 * PAD) * i / (n - 1);
+  let h = `<rect x="${PAD}" y="${TOPY}" width="${EW - 2 * PAD}" height="${BOTY - TOPY}" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="4 3"/>`;
+  const line = (arr, base) => { const pts = []; for (let k = 0; k <= 60; k++) { const u = k / 60; pts.push(`${(PAD + (EW - 2 * PAD) * u).toFixed(1)},${(base + evalEdge(arr, u) * SC).toFixed(1)}`); } return pts.join(' '); };
+  h += `<polyline points="${line(EDGE.top, TOPY)}" fill="none" stroke="currentColor" stroke-width="1.5"/><polyline points="${line(EDGE.bot, BOTY)}" fill="none" stroke="currentColor" stroke-width="1.5"/>`;
+  for (const [k, base] of [['top', TOPY], ['bot', BOTY]]) EDGE[k].forEach((v, i) => {
+    h += `<circle data-k="${k}" data-i="${i}" cx="${X(i)}" cy="${base + v * SC}" r="7" fill="var(--panel)" stroke="currentColor" stroke-width="2" style="cursor:ns-resize"/>`;
+  });
+  h += `<text x="6" y="14" font-size="10" fill="currentColor" opacity=".5">top edge</text><text x="6" y="164" font-size="10" fill="currentColor" opacity=".5">bottom edge</text>`;
+  edSvg.innerHTML = h; edSvg.style.color = 'var(--ink)';
+}
+let dragH = null;
+edSvg.addEventListener('pointerdown', e => {
+  const t = e.target.closest('circle'); if (!t) return;
+  dragH = { k: t.dataset.k, i: +t.dataset.i }; edSvg.setPointerCapture(e.pointerId); e.preventDefault();
+});
+edSvg.addEventListener('pointermove', e => {
+  if (!dragH) return;
+  const r = edSvg.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * 170, base = dragH.k === 'top' ? TOPY : BOTY;
+  EDGE[dragH.k][dragH.i] = Math.max(-1, Math.min(1, (y - base) / SC));
+  drawEdgeEditor(); needsDraw = true;
+});
+edSvg.addEventListener('pointerup', () => { dragH = null; });
+edSvg.addEventListener('dblclick', e => {
+  const t = e.target.closest('circle'); if (!t) return;
+  EDGE[t.dataset.k][+t.dataset.i] = 0; drawEdgeEditor(); needsDraw = true;
+});
+$('edgeSmooth').addEventListener('input', () => { drawEdgeEditor(); needsDraw = true; });
+function flattenEdges() { EDGE.top = Array(S.hPoints).fill(0); EDGE.bot = Array(S.hPoints).fill(0); drawEdgeEditor(); needsDraw = true; }
+function randomizeEdges() {
+  const r = () => Math.round((Math.random() * 2 - 1) * 100) / 100;
+  EDGE.top = Array.from({ length: S.hPoints }, r); EDGE.bot = Array.from({ length: S.hPoints }, r); drawEdgeEditor(); needsDraw = true;
+}
+$('edgeFlat').onclick = flattenEdges;
+$('edgeRand').onclick = randomizeEdges;
+S._row_hPoints.querySelector('input').addEventListener('input', resampleEdges);
+resampleEdges();
+
+/* ---------- randomize ---------- */
+function setSeed(n) { seed = n; $('seedOut').textContent = n; dirtyGeom = true; needsDraw = true; }
+$('reseed').onclick = () => setSeed(Math.floor(Math.random() * 99999) + 1);
+$('shuffle').onclick = () => {
+  const R = Math.random;
+  const pick = (k, lo, hi) => { const [mn, mx, st] = ranges[k]; const v = Math.round((mn + (mx - mn) * (lo + (hi - lo) * R())) / st) * st; S['_row_' + k]._set(+v.toFixed(4)); };
+  pick('amp', 0.1, 0.55); pick('freq', 0.1, 0.6); pick('hrange', 0.15, 0.5); randomizeEdges();
+  pick('phase', 0, 1); pick('side', 0, 0.5); pick('skew', 0.3, 0.7);
+  pick('glyphJ', 0, 0.4);
+  setSeed(Math.floor(R() * 99999) + 1);
+};
+
+/* ---------- export ---------- */
+function exportSvgString() {
+  const warped = svg._warped; if (!warped) return null;
+  const { els, box } = buildLayers(warped);
+  const [x0, y0, x1, y1] = box;
+  const pad = Math.max(x1 - x0, y1 - y0) * 0.04;
+  const vb = [x0 - pad, y0 - pad, x1 - x0 + 2 * pad, y1 - y0 + 2 * pad];
+  const bg = $('transparent').checked ? '' : `<rect x="${vb[0].toFixed(1)}" y="${vb[1].toFixed(1)}" width="${vb[2].toFixed(1)}" height="${vb[3].toFixed(1)}" fill="${$('bg').value}"/>`;
+  return { vb, str: `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(n => n.toFixed(1)).join(' ')}" width="${vb[2].toFixed(0)}" height="${vb[3].toFixed(0)}">${bg}${els.map(elString).join('')}</svg>` };
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('exportSvg').onclick = () => { const e = exportSvgString(); if (e) download(new Blob([e.str], { type: 'image/svg+xml' }), 'warp-type.svg'); };
+$('exportPng').onclick = () => {
+  const e = exportSvgString(); if (!e) return;
+  const scale = 2400 / e.vb[2], img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas'); c.width = 2400; c.height = Math.round(e.vb[3] * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(b => download(b, 'warp-type.png'));
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(e.str);
+};
+</script>
+</body>
+</html>
