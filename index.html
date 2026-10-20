@@ -73,6 +73,10 @@
   input[type=range]::-moz-range-track { height: 2px; background: var(--line); }
   input[type=range]::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 0; }
 
+  .seg { display: flex; gap: 4px; }
+  .seg button { padding: 6px 12px; font-size: 13px; background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .seg button:hover { background: var(--field); opacity: 1; }
+  .seg button.on { background: var(--ink); color: var(--panel); box-shadow: none; }
   .crow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
   .crow > span { color: var(--ink); }
   .cin { display: flex; align-items: center; gap: 8px; }
@@ -114,26 +118,56 @@
     <div class="btns hbtns"><button id="resetAll" class="ghost">RESET ALL</button><button id="shuffle" class="ghost">RANDOMIZE</button></div>
     <div class="seedline">Seed <output id="seedOut">1</output></div>
     <div id="drop">Drop a .ttf / .otf / .woff here<br>or click to choose</div>
-    <input id="fontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+    <input autocomplete="off" id="fontfile" type="file" accept=".ttf,.otf,.woff" hidden>
     <div id="fontname"></div>
-    <input id="linefontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+    <input autocomplete="off" id="linefontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+  </div>
+
+  <h2>Canvas</h2>
+  <div class="btns" id="exportBtns">
+    <button id="exportSvg">Download SVG</button>
+    <button id="exportPng" class="ghost">Download PNG</button>
+  </div>
+  <div class="colors" style="margin-bottom:8px">
+    <label>Canvas <input autocomplete="off" type="number" id="cw" value="1080" min="100" max="8000" style="width:64px"> × <input autocomplete="off" type="number" id="ch" value="1080" min="100" max="8000" style="width:64px"> px</label>
+  </div>
+  <div class="colors">
+    <label>Background <input autocomplete="off" type="color" id="bg" value="#ffffff"></label>
+    <label><input autocomplete="off" type="checkbox" id="transparent"> Transparent</label>
   </div>
 
   <h2>Colors</h2>
-  <div class="crow"><span>Fill</span><div class="cin"><input type="color" id="fg" value="#ffffff"></div></div>
-  <div class="crow" data-modes="effect frame"><span>Outline &amp; shadow</span><div class="cin"><input type="color" id="outlineC" value="#000000"></div></div>
+  <div class="crow"><span>Fill</span><div class="cin"><input autocomplete="off" type="color" id="fg" value="#ffffff"></div></div>
+  <div class="crow" data-modes="effect frame"><span>Outline &amp; shadow</span><div class="cin"><input autocomplete="off" type="color" id="outlineC" value="#000000"></div></div>
   <div data-modes="effect frame">
     <div class="crow"><span>Presets</span><div class="chips" id="gChips"></div></div>
     <button class="ghost swap" id="gSwap">⇄ Swap colors</button>
   </div>
 
   <h2>Lines</h2>
-  <div id="lines"></div>
-  <button id="addLine" class="ghost" style="width:100%;margin-top:6px">+ Add line</button>
+  <div class="crow" data-modes="effect"><span>Source</span><div class="seg" id="srcSel"><button type="button" data-src="text" class="on">Text</button><button type="button" data-src="svg">SVG</button></div></div>
+  <div id="textSrc">
+    <div id="lines"></div>
+    <button id="addLine" class="ghost" style="width:100%;margin-top:6px">+ Add line</button>
+  </div>
+  <div id="svgCard" style="display:none">
+    <div class="line">
+      <div class="meta"><span class="fn" id="svgName">No SVG loaded</span><button type="button" class="ghost" id="svgPick">Choose SVG…</button><button type="button" class="ghost" id="svgClear">✕</button></div>
+      <div class="cblock" style="margin-top:10px">
+        <div class="crow"><span>Fill</span><div class="cin"><input type="color" id="svgFill" value="#ffffff"></div></div>
+        <div class="crow"><span>Outline &amp; shadow</span><div class="cin"><input type="color" id="svgOutline" value="#000000"></div></div>
+        <div class="crow"><span>Presets</span><div class="chips" id="svgChips"></div></div>
+        <button class="ghost swap" id="svgSwap">⇄ Swap colors</button>
+      </div>
+      <div class="cols"><label><input type="checkbox" id="svgOm" checked> Outline</label><label><input type="checkbox" id="svgSm" checked> Shadow</label></div>
+    </div>
+    <input id="svgFile" type="file" accept=".svg,image/svg+xml" hidden>
+    <div style="color:var(--muted);font-size:12.5px;margin-top:6px">Use a logo or shape made of filled paths. Strokes without a fill are skipped. The wave, height points, skew and shear then bend the SVG like text.</div>
+  </div>
 
   <h2>Edge text</h2>
   <div id="frameControls"></div>
-  <div class="check"><input type="checkbox" id="fccw"><label for="fccw">Run all lines counter-clockwise</label></div>
+  <div class="check"><input autocomplete="off" type="checkbox" id="fccw"><label for="fccw">Run all lines counter-clockwise</label></div>
   <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Letters run around the edge of the canvas, one per cell, and each line carries on from the end of the previous one. The cell size adjusts automatically so everything fits.</div>
 
   <h2>Pattern</h2>
@@ -143,19 +177,20 @@
   </div>
 
   <h2>Outline &amp; shadow</h2>
-  <div class="check"><input type="checkbox" id="outlineOn" checked><label for="outlineOn">Outline</label></div>
-  <div class="check"><input type="checkbox" id="shadowOn" checked><label for="shadowOn">Extruded shadow</label></div>
+  <div class="check"><input autocomplete="off" type="checkbox" id="outlineOn" checked><label for="outlineOn">Outline</label></div>
+  <div class="check"><input autocomplete="off" type="checkbox" id="shadowOn" checked><label for="shadowOn">Extruded shadow</label></div>
+  <div class="crow"><span>Outline weight</span><div class="seg" id="outlineWeight"><button type="button" data-w="2" class="on">Thin</button><button type="button" data-w="4">Medium</button><button type="button" data-w="6">Bold</button></div></div>
   <div id="styleControls"></div>
 
   <h2>Layout</h2>
-  <div class="check" data-modes="effect"><input type="checkbox" id="fit"><label for="fit">Stretch every line to the same width (sizes differ)</label></div>
-  <div class="check" data-modes="effect"><input type="checkbox" id="align" checked><label for="align">Centre all lines (off = left)</label></div>
+  <div class="check" data-modes="effect"><input autocomplete="off" type="checkbox" id="fit"><label for="fit">Stretch every line to the same width (sizes differ)</label></div>
+  <div class="check" data-modes="effect"><input autocomplete="off" type="checkbox" id="align" checked><label for="align">Centre all lines (off = left)</label></div>
   <div id="layoutControls"></div>
 
   <h2>Height variation points</h2>
   <div id="hedgeControls"></div>
   <svg id="edgeEd" viewBox="0 0 280 170" style="width:100%;touch-action:none;background:var(--bg);border:1px solid var(--line);border-radius:6px"></svg>
-  <div class="check" style="margin-top:6px"><input type="checkbox" id="edgeSmooth"><label for="edgeSmooth">Smooth curve between points</label></div>
+  <div class="check" style="margin-top:6px"><input autocomplete="off" type="checkbox" id="edgeSmooth"><label for="edgeSmooth">Smooth curve between points</label></div>
   <div class="btns" style="margin-bottom:6px">
     <button id="edgeRand" class="ghost">Randomize points</button>
     <button id="edgeFlat" class="ghost">Flatten</button>
@@ -168,18 +203,6 @@
   <h2>Letter shear</h2>
   <div id="perspControls"></div>
 
-  <h2>Canvas</h2>
-  <div class="btns" id="exportBtns">
-    <button id="exportSvg">Download SVG</button>
-    <button id="exportPng" class="ghost">Download PNG</button>
-  </div>
-  <div class="colors" style="margin-bottom:8px">
-    <label>Canvas <input type="number" id="cw" value="1080" min="100" max="8000" style="width:64px"> × <input type="number" id="ch" value="1080" min="100" max="8000" style="width:64px"> px</label>
-  </div>
-  <div class="colors">
-    <label>Background <input type="color" id="bg" value="#f4f4f2"></label>
-    <label><input type="checkbox" id="transparent"> Transparent</label>
-  </div>
 </aside>
 
 <main>
@@ -253,6 +276,8 @@ for (const group in DEFS) {
 }
 
 /* ---------- state ---------- */
+let source = 'text', svgSrc = null;       // mode 1 can run on text lines or on an uploaded SVG
+const svgLine = { text: '', font: null, fontName: '', fill: null, outline: null, shadow: null, scale: 1, track: 0, dy: 0, showOutline: true, showShadow: true, align: null, front: false };
 let mode = 'effect', font = null, defaultFont = null, seed = 1, geom = null, dirtyGeom = true, t = 0, last = performance.now();
 const $ = id => document.getElementById(id);
 const stage = $('stage');
@@ -285,6 +310,7 @@ function makeChips(host, apply) {
 function syncHex() {
   document.querySelectorAll('input.hex').forEach(h => { if (document.activeElement !== h) h.value = h._c.value; });
   const mark = (host, o, f) => host && host.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.o === o && b.dataset.f === f));
+  if ($('svgFill')) { if (document.activeElement !== $('svgFill')) $('svgFill').value = svgLine.fill || $('fg').value; if (document.activeElement !== $('svgOutline')) $('svgOutline').value = svgLine.outline || $('outlineC').value; mark($('svgChips'), $('svgOutline').value.toLowerCase(), $('svgFill').value.toLowerCase()); }
   mark($('gChips'), $('outlineC').value.toLowerCase(), $('fg').value.toLowerCase());
   document.querySelectorAll('#lines .line').forEach((row, i) => { const ln = lines[i]; if (ln) mark(row.querySelector('[data-chips]'), (ln.outline || $('outlineC').value).toLowerCase(), (ln.fill || $('fg').value).toLowerCase()); });
 }
@@ -298,6 +324,9 @@ function applyMode() {
   const key = viewKey();
   document.querySelectorAll('[data-modes]').forEach(el => { el.style.display = el.dataset.modes.split(' ').includes(key) ? '' : 'none'; });
   document.querySelectorAll('#modeSel button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const useSvg = mode === 'effect' && source === 'svg';
+  $('textSrc').style.display = useSvg ? 'none' : ''; $('svgCard').style.display = useSvg ? '' : 'none';
+  document.querySelectorAll('#srcSel button').forEach(b => b.classList.toggle('on', b.dataset.src === source));
 }
 (function wrapSections() {      // each heading and what follows it becomes one block that can be shown or hidden per mode
   const ALL = 'effect frame pattern-rows', WARP = 'effect pattern-rows';
@@ -386,8 +415,8 @@ $('addLine').onclick = () => { lines.push({ text: '', font: null, fontName: '', 
 renderLines();
 $('align').addEventListener('change', () => { dirtyGeom = true; needsDraw = true; });
 $('fit').addEventListener('change', () => { dirtyGeom = true; needsDraw = true; });
-$('outlineOn').addEventListener('change', () => { lines.forEach(l => l.showOutline = $('outlineOn').checked); [...linesEl.children].forEach(r => r._sync && r._sync()); needsDraw = true; });
-$('shadowOn').addEventListener('change', () => { lines.forEach(l => l.showShadow = $('shadowOn').checked); [...linesEl.children].forEach(r => r._sync && r._sync()); needsDraw = true; });
+$('outlineOn').addEventListener('change', () => { svgLine.showOutline = $('outlineOn').checked; $('svgOm').checked = svgLine.showOutline; lines.forEach(l => l.showOutline = $('outlineOn').checked); [...linesEl.children].forEach(r => r._sync && r._sync()); needsDraw = true; });
+$('shadowOn').addEventListener('change', () => { svgLine.showShadow = $('shadowOn').checked; $('svgSm').checked = svgLine.showShadow; lines.forEach(l => l.showShadow = $('shadowOn').checked); [...linesEl.children].forEach(r => r._sync && r._sync()); needsDraw = true; });
 ['fg', 'outlineC'].forEach(id => $(id).addEventListener('input', () => [...linesEl.children].forEach(r => r._sync && r._sync())));
 ['fg', 'bg', 'transparent', 'cw', 'ch', 'outlineOn', 'outlineC', 'shadowOn'].forEach(id => $(id).addEventListener('input', () => needsDraw = true));
 
@@ -527,7 +556,7 @@ function warpPoints(geo, phi, wseed) {
     const dx = xx - cx, dy = yy - cy;
     return [cx + dx * cr - dy * sr, cy + dx * sr + dy * cr];
   };
-  const out = [], e = 4, k = S.rigid;
+  const out = [], e = 4, k = geo.svg ? 0 : S.rigid;      // an SVG bends as a whole, letters keep their shape
   // per glyph: follow the warp with an affine map (keeps curves as curves), then blend the remaining local bending by (1-k)
   const PR = rng(seed * 977 + 31);
   for (const g of geo.glyphs) {
@@ -548,7 +577,7 @@ function warpPoints(geo, phi, wseed) {
           o[i] = p0[0] + ux + shx * uy; o[i + 1] = p0[1] + uy + shy * ux;
         }
       }
-      o.ln = g.ln; out.push(o);
+      o.ln = g.ln; o.gid = c.gid; out.push(o);
     }
   }
   return out;
@@ -588,7 +617,9 @@ function sweepPath(contours, dx, dy) {
   }
   return d;
 }
-function shifted(contours, dx, dy) { return contours.map(c => { const o = c.map((v, i) => v + (i % 2 ? dy : dx)); o.ln = c.ln; return o; }); }
+function shifted(contours, dx, dy) { return contours.map(c => { const o = c.map((v, i) => v + (i % 2 ? dy : dx)); o.ln = c.ln; o.gid = c.gid; return o; }); }
+// SVG shapes are filled one element at a time with the even-odd rule, so holes stay holes and shapes don't cancel each other
+function groupsOf(P) { if (!P.length || P[0].gid === undefined) return [{ cs: P, rule: null }]; const m = new Map(); P.forEach(c => { if (!m.has(c.gid)) m.set(c.gid, []); m.get(c.gid).push(c); }); return [...m.values()].map(cs => ({ cs, rule: 'evenodd' })); }
 function buildLayers(warped, W, sizeOf) {
   const fill = $('fg').value, oc = $('outlineC').value;
   const plain = mode === 'pattern';        // pattern mode has no outline or extrusion
@@ -606,17 +637,16 @@ function buildLayers(warped, W, sizeOf) {
   for (const group of [lineObjs.filter(l => !l.front), lineObjs.filter(l => l.front)]) {
     for (const ln of group) if (isShadow(ln)) {
       const P = part(ln), oc2 = col(ln, 'outline', oc), sc2 = oc2;
-      const sweep = sweepPath(P, dx, dy), end = toPath(shifted(P, dx, dy));
-      if (isOutline(ln)) { const sw = swOf(ln); els.push({ d: sweep, stroke: oc2, sw }); els.push({ d: end, stroke: oc2, sw }); }
-      els.push({ d: sweep, fill: sc2 }); els.push({ d: end, fill: sc2 });
+      const sweep = sweepPath(P, dx, dy), ends = groupsOf(P).map(g => ({ d: toPath(shifted(g.cs, dx, dy)), rule: g.rule }));
+      if (isOutline(ln)) { const sw = swOf(ln); els.push({ d: sweep, stroke: oc2, sw }); ends.forEach(e => els.push({ d: e.d, stroke: oc2, sw })); }
+      els.push({ d: sweep, fill: sc2 }); ends.forEach(e => els.push({ d: e.d, fill: sc2, rule: e.rule }));
     }
     for (const ln of group) {
       const P = part(ln);
-      els.push({ d: toPath(P), fill: plain ? fill : col(ln, 'fill', fill) });
-      if (isOutline(ln)) {
-        const oc2 = col(ln, 'outline', oc);
-        els.push({ d: toPath(P), stroke: oc2, sw: strokeOf(ln) });
-      }
+      // the outline sits entirely outside the letter: a stroke twice as wide is drawn first and the fill covers its inner half
+      const gs = groupsOf(P);
+      if (isOutline(ln)) gs.forEach(g => els.push({ d: toPath(g.cs), stroke: col(ln, 'outline', oc), sw: swOf(ln) }));
+      gs.forEach(g => els.push({ d: toPath(g.cs), fill: plain ? fill : col(ln, 'fill', fill), rule: g.rule }));
     }
   }
   const bb = bbox(A), pad = Math.max(0, ...lineObjs0.filter(isOutline).map(l => strokeOf(l)));
@@ -626,7 +656,7 @@ function buildLayers(warped, W, sizeOf) {
 }
 function elString(e) {
   if (e.raw) return e.raw;
-  return `<path d="${e.d}" fill="${e.fill || 'none'}"` + (e.stroke ? ` stroke="${e.stroke}" stroke-width="${e.sw}" stroke-linejoin="round"` : '') + (e.order ? ' paint-order="stroke fill"' : '') + '/>';
+  return `<path d="${e.d}" fill="${e.fill || 'none'}"` + (e.stroke ? ` stroke="${e.stroke}" stroke-width="${e.sw}" stroke-linejoin="round"` : '') + (e.order ? ' paint-order="stroke fill"' : '') + (e.rule ? ` fill-rule="${e.rule}"` : '') + '/>';
 }
 
 /* ---------- render loop ---------- */
@@ -701,7 +731,7 @@ function placeFrame(cw, ch) {
     if (!ln.text.trim()) continue;
     // room to keep free inside the cell so the outline and the extruded shadow never leave the canvas
     const ol = !!ln.showOutline, sh = !!ln.showShadow && S.depth > 0, stroke = S.outW / 100 * Math.min(cW, cH);
-    const m = sh ? (ol ? stroke : 0) : (ol ? stroke / 2 : 0);
+    const m = ol ? stroke : 0;                 // the outline now sits fully outside the letter
     const L3 = S.depth * cw * 0.3, ang = S.angle * Math.PI / 180, ex = sh ? Math.cos(ang) * L3 : 0, ey = sh ? Math.sin(ang) * L3 : 0;
     const bx = gx + m + Math.max(0, -ex), by = gy + m + Math.max(0, -ey);
     const bw = Math.max(cW * 0.1, cW - 2 * gx - 2 * m - Math.abs(ex)), bh = Math.max(cH * 0.1, cH - 2 * gy - 2 * m - Math.abs(ey));
@@ -738,13 +768,111 @@ function coverToCanvas(box) {
   return { cw, ch, tf: `translate(${(cw / 2 - k * (box[0] + box[2]) / 2).toFixed(2)} ${(ch / 2 - k * (box[1] + box[3]) / 2).toFixed(2)}) scale(${k.toFixed(5)})` };
 }
 
+/* ---------- SVG as the source for mode 1 ---------- */
+function parsePathD(d) {
+  const re = /([MmLlHhVvCcSsQqTtAaZz])|([-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?)/g, tk = []; let m; while ((m = re.exec(d))) tk.push(m[1] || +m[2]);
+  const out = []; let cur = null, x = 0, y = 0, sx = 0, sy = 0, lcx = 0, lcy = 0, lqx = 0, lqy = 0, i = 0, cmd = '', prev = '';
+  const add = (px, py) => { cur.push(px, py); x = px; y = py; }, start = (px, py) => { cur = [px, py]; out.push(cur); x = sx = px; y = sy = py; };
+  const cubic = (x1, y1, x2, y2, x3, y3) => { const x0 = x, y0 = y; for (let k = 1; k <= 16; k++) { const u = k / 16, v = 1 - u; add(v*v*v*x0 + 3*v*v*u*x1 + 3*v*u*u*x2 + u*u*u*x3, v*v*v*y0 + 3*v*v*u*y1 + 3*v*u*u*y2 + u*u*u*y3); } lcx = x2; lcy = y2; };
+  const quad = (x1, y1, x2, y2) => { const x0 = x, y0 = y; for (let k = 1; k <= 12; k++) { const u = k / 12, v = 1 - u; add(v*v*x0 + 2*v*u*x1 + u*u*x2, v*v*y0 + 2*v*u*y1 + u*u*y2); } lqx = x1; lqy = y1; };
+  const arc = (rx, ry, phi, fa, fs, x2, y2) => {
+    const x1 = x, y1 = y; if (!rx || !ry) { add(x2, y2); return; } rx = Math.abs(rx); ry = Math.abs(ry);
+    const cp = Math.cos(phi * Math.PI / 180), sp = Math.sin(phi * Math.PI / 180), dx = (x1 - x2) / 2, dy = (y1 - y2) / 2, x1p = cp * dx + sp * dy, y1p = -sp * dx + cp * dy;
+    const lam = x1p * x1p / (rx * rx) + y1p * y1p / (ry * ry); if (lam > 1) { const q = Math.sqrt(lam); rx *= q; ry *= q; }
+    const nu = rx*rx*ry*ry - rx*rx*y1p*y1p - ry*ry*x1p*x1p, de = rx*rx*y1p*y1p + ry*ry*x1p*x1p; let co = Math.sqrt(Math.max(0, nu / de)); if (fa === fs) co = -co;
+    const cxp = co * rx * y1p / ry, cyp = -co * ry * x1p / rx, cx = cp * cxp - sp * cyp + (x1 + x2) / 2, cy = sp * cxp + cp * cyp + (y1 + y2) / 2;
+    const ang = (ux, uy, vx, vy) => { const sg = ux * vy - uy * vx < 0 ? -1 : 1; return sg * Math.acos(Math.max(-1, Math.min(1, (ux*vx + uy*vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy))))); };
+    const th1 = ang(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry); let dth = ang((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
+    if (!fs && dth > 0) dth -= 2 * Math.PI; else if (fs && dth < 0) dth += 2 * Math.PI;
+    const n = Math.max(4, Math.ceil(Math.abs(dth) / (Math.PI / 16)));
+    for (let k = 1; k <= n; k++) { const t2 = th1 + dth * k / n, xr = rx * Math.cos(t2), yr = ry * Math.sin(t2); add(cp * xr - sp * yr + cx, sp * xr + cp * yr + cy); }
+  };
+  while (i < tk.length) {
+    if (typeof tk[i] === 'string') cmd = tk[i++]; else if (!cmd) break;
+    const rel = cmd === cmd.toLowerCase(), C = cmd.toUpperCase(), ox = rel ? x : 0, oy = rel ? y : 0, N = () => tk[i++];
+    if (C === 'Z') { if (cur) { x = sx; y = sy; } cur = null; prev = 'Z'; continue; }
+    if (C !== 'M' && !cur) start(x, y);
+    if (C === 'M') { start(N() + ox, N() + oy); cmd = rel ? 'l' : 'L'; }
+    else if (C === 'L') add(N() + ox, N() + oy);
+    else if (C === 'H') add(N() + ox, y);
+    else if (C === 'V') add(x, N() + oy);
+    else if (C === 'C') { const a1 = N() + ox, b1 = N() + oy, a2 = N() + ox, b2 = N() + oy, a3 = N() + ox, b3 = N() + oy; cubic(a1, b1, a2, b2, a3, b3); }
+    else if (C === 'S') { const f1 = 'CS'.includes(prev) ? 2 * x - lcx : x, g1 = 'CS'.includes(prev) ? 2 * y - lcy : y, a2 = N() + ox, b2 = N() + oy, a3 = N() + ox, b3 = N() + oy; cubic(f1, g1, a2, b2, a3, b3); }
+    else if (C === 'Q') { const a1 = N() + ox, b1 = N() + oy, a2 = N() + ox, b2 = N() + oy; quad(a1, b1, a2, b2); }
+    else if (C === 'T') { const f1 = 'QT'.includes(prev) ? 2 * x - lqx : x, g1 = 'QT'.includes(prev) ? 2 * y - lqy : y, a2 = N() + ox, b2 = N() + oy; quad(f1, g1, a2, b2); }
+    else if (C === 'A') { const rx = N(), ry = N(), ph = N(), fa = N(), fs = N(), a2 = N() + ox, b2 = N() + oy; arc(rx, ry, ph, fa, fs, a2, b2); }
+    prev = C;
+  }
+  return out.filter(c => c.length >= 6);
+}
+function shapePolys(el) {
+  const g = n => parseFloat(el.getAttribute(n)) || 0, tag = el.tagName.toLowerCase();
+  if (tag === 'path') return parsePathD(el.getAttribute('d') || '');
+  if (tag === 'rect') { const x0 = g('x'), y0 = g('y'), w = g('width'), h = g('height'); return w && h ? [[x0, y0, x0 + w, y0, x0 + w, y0 + h, x0, y0 + h]] : []; }
+  if (tag === 'circle' || tag === 'ellipse') { const cx = g('cx'), cy = g('cy'), rx = tag === 'circle' ? g('r') : g('rx'), ry = tag === 'circle' ? g('r') : g('ry'), p = []; for (let k = 0; k < 96; k++) { const t2 = k / 96 * Math.PI * 2; p.push(cx + rx * Math.cos(t2), cy + ry * Math.sin(t2)); } return rx && ry ? [p] : []; }
+  if (tag === 'polygon' || tag === 'polyline') { const n = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number).filter(v => !isNaN(v)); return n.length >= 6 ? [n] : []; }
+  return [];
+}
+async function loadSvgFile(file) {
+  if (!file) return;
+  const txt = await file.text(), doc = new DOMParser().parseFromString(txt, 'image/svg+xml'), root = doc.documentElement;
+  if (!root || root.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) { alert('That file is not a valid SVG.'); return; }
+  root.querySelectorAll('script').forEach(n => n.remove());
+  let vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  if (vb.length !== 4 || vb.some(isNaN)) vb = [0, 0, parseFloat(root.getAttribute('width')) || 100, parseFloat(root.getAttribute('height')) || 100];
+  root.setAttribute('width', vb[2]); root.setAttribute('height', vb[3]); root.setAttribute('viewBox', vb.join(' '));
+  const host = document.createElement('div'); host.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;width:0;height:0;overflow:hidden';
+  host.appendChild(document.importNode(root, true)); document.body.appendChild(host);
+  const shapes = [];
+  host.firstChild.querySelectorAll('path,rect,circle,ellipse,polygon,polyline').forEach(el => {
+    if (el.closest('defs,clipPath,mask,symbol,pattern,marker,filter')) return;
+    const cs = getComputedStyle(el); if (cs.fill === 'none' || cs.display === 'none') return;
+    const M = el.getCTM(); if (!M) return;
+    const cons = shapePolys(el).map(p => { const o = new Array(p.length); for (let i = 0; i < p.length; i += 2) { o[i] = M.a * p[i] + M.c * p[i + 1] + M.e; o[i + 1] = M.b * p[i] + M.d * p[i + 1] + M.f; } return o; });
+    if (cons.length) shapes.push({ contours: cons });
+  });
+  host.remove();
+  if (!shapes.length) { alert('No filled shapes were found in that SVG.'); return; }
+  svgSrc = { name: file.name, shapes, w: vb[2], h: vb[3] }; source = 'svg';
+  $('svgName').textContent = file.name; applyMode(); dirtyGeom = needsDraw = true;
+}
+function buildSvgGeom() {
+  if (!svgSrc) return null;
+  const k = 1000 / svgSrc.w, W = 1000, H = svgSrc.h * k, step = W / 140, contours = [], glyphs = [];
+  svgSrc.shapes.forEach((sh, gi) => {
+    const cs = []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const c of sh.contours) {
+      const o = [], n = c.length / 2;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n, ax = c[2*i] * k, ay = c[2*i+1] * k, bx = c[2*j] * k, by = c[2*j+1] * k, m = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / step));
+        for (let q = 0; q < m; q++) { const px = ax + (bx - ax) * q / m, py = ay + (by - ay) * q / m; o.push(px, py); x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+      }
+      o.ln = svgLine; o.gid = gi; cs.push(o); contours.push(o);
+    }
+    glyphs.push({ contours: cs, ln: svgLine, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, r: Math.max(x1 - x0, y1 - y0) / 2 || 1 });
+  });
+  svgLine._fs = 0.3 * Math.max(W, H);          // what "text size" means for an outline on an SVG
+  return { contours, glyphs, W, H, capH: 100, svg: true };
+}
+$('srcSel').querySelectorAll('button').forEach(b => b.onclick = () => { source = b.dataset.src; applyMode(); dirtyGeom = needsDraw = true; });
+$('svgPick').onclick = () => $('svgFile').click();
+$('svgFile').onchange = e => { loadSvgFile(e.target.files[0]); e.target.value = ''; };
+$('svgClear').onclick = () => { svgSrc = null; $('svgName').textContent = 'No SVG loaded'; dirtyGeom = needsDraw = true; };
+['svgFill', 'svgOutline'].forEach(id => addHex($(id)));
+$('svgFill').addEventListener('input', () => { svgLine.fill = $('svgFill').value; needsDraw = true; });
+$('svgOutline').addEventListener('input', () => { svgLine.outline = $('svgOutline').value; needsDraw = true; });
+$('svgOm').onchange = () => { svgLine.showOutline = $('svgOm').checked; needsDraw = true; };
+$('svgSm').onchange = () => { svgLine.showShadow = $('svgSm').checked; needsDraw = true; };
+makeChips($('svgChips'), (o, f) => { svgLine.outline = o; svgLine.fill = f; $('svgOutline').value = o; $('svgFill').value = f; needsDraw = true; });
+$('svgSwap').onclick = () => { const f0 = svgLine.fill || $('fg').value, o0 = svgLine.outline || $('outlineC').value; svgLine.fill = o0; svgLine.outline = f0; $('svgFill').value = o0; $('svgOutline').value = f0; needsDraw = true; };
+
 /* ---------- scene: everything that gets drawn, for the current mode ---------- */
 function computeScene() {
   const [cw, ch] = canvasSize(), key = viewKey();
   let A, W, sizeOf = ln => ln._fs || 1000;
   if (key === 'frame') { A = placeFrame(cw, ch); W = cw; sizeOf = () => frameCellSize; }
   else {
-    if (dirtyGeom) { geom = buildGeom(key === 'pattern-rows' ? expandRows() : lines); dirtyGeom = false; }
+    if (dirtyGeom) { geom = key === 'effect' && source === 'svg' ? buildSvgGeom() : buildGeom(key === 'pattern-rows' ? expandRows() : lines); dirtyGeom = false; }
     if (!geom) return null;
     A = warpPoints(geom, t, seed); W = geom.W;
   }
@@ -775,6 +903,8 @@ requestAnimationFrame(frame);
 
 /* ---------- reset ---------- */
 const resetRows = group => { for (const [key, , , , , val] of DEFS[group]) S['_row_' + key]._set(val); dirtyGeom = needsDraw = true; };
+function setOutlineWeight(v) { S.outW = v; document.querySelectorAll('#outlineWeight button').forEach(b => b.classList.toggle('on', +b.dataset.w === v)); needsDraw = true; }
+document.querySelectorAll('#outlineWeight button').forEach(b => b.onclick = () => setOutlineWeight(+b.dataset.w));
 const SECTION_RESETS = {
   'Lines': () => {
     lines.forEach(l => { l.scale = 1; l.track = 0; l.dy = 0; l.fill = l.outline = l.shadow = null; l.showOutline = $('outlineOn').checked; l.showShadow = $('shadowOn').checked; l.align = null; l.front = false; });
@@ -784,7 +914,7 @@ const SECTION_RESETS = {
   'Edge text': () => { resetRows('frame'); $('fccw').checked = false; },
   'Pattern': () => resetRows('prow'),
   'Outline & shadow': () => {
-    resetRows('style'); $('outlineOn').checked = true; $('shadowOn').checked = true; $('outlineC').value = '#000000'; lines.forEach(l => { l.showOutline = true; l.showShadow = true; });
+    resetRows('style'); setOutlineWeight(2); $('outlineOn').checked = true; $('shadowOn').checked = true; $('outlineC').value = '#000000'; lines.forEach(l => { l.showOutline = true; l.showShadow = true; });
     [...linesEl.children].forEach(r => r._sync && r._sync());
   },
   'Layout': () => { resetRows('layout'); $('fit').checked = false; $('align').checked = true; },
@@ -793,7 +923,7 @@ const SECTION_RESETS = {
   'Letter shear': () => resetRows('persp'),
   'Variation': () => setSeed(1),
   'Colors': () => { $('fg').value = MODE_FILL[mode]; modeFill[mode] = MODE_FILL[mode]; $('outlineC').value = '#000000'; [...linesEl.children].forEach(r => r._sync && r._sync()); },
-  'Canvas': () => { $('bg').value = '#f4f4f2'; $('transparent').checked = false; $('cw').value = 1080; $('ch').value = 1080; [...linesEl.children].forEach(r => r._sync && r._sync()); },
+  'Canvas': () => { $('bg').value = '#ffffff'; $('transparent').checked = false; $('cw').value = 1080; $('ch').value = 1080; [...linesEl.children].forEach(r => r._sync && r._sync()); },
 };
 document.querySelectorAll('aside h2').forEach(h => {
   const fn = SECTION_RESETS[h.textContent.trim()];
