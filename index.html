@@ -73,6 +73,10 @@
   input[type=range]::-moz-range-track { height: 2px; background: var(--line); }
   input[type=range]::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 0; }
 
+  .seg { display: flex; gap: 4px; }
+  .seg button { padding: 6px 12px; font-size: 13px; background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .seg button:hover { background: var(--field); opacity: 1; }
+  .seg button.on { background: var(--ink); color: var(--panel); box-shadow: none; }
   .crow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
   .crow > span { color: var(--ink); }
   .cin { display: flex; align-items: center; gap: 8px; }
@@ -114,14 +118,27 @@
     <div class="btns hbtns"><button id="resetAll" class="ghost">RESET ALL</button><button id="shuffle" class="ghost">RANDOMIZE</button></div>
     <div class="seedline">Seed <output id="seedOut">1</output></div>
     <div id="drop">Drop a .ttf / .otf / .woff here<br>or click to choose</div>
-    <input id="fontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+    <input autocomplete="off" id="fontfile" type="file" accept=".ttf,.otf,.woff" hidden>
     <div id="fontname"></div>
-    <input id="linefontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+    <input autocomplete="off" id="linefontfile" type="file" accept=".ttf,.otf,.woff" hidden>
+  </div>
+
+  <h2>Canvas</h2>
+  <div class="btns" id="exportBtns">
+    <button id="exportSvg">Download SVG</button>
+    <button id="exportPng" class="ghost">Download PNG</button>
+  </div>
+  <div class="colors" style="margin-bottom:8px">
+    <label>Canvas <input autocomplete="off" type="number" id="cw" value="1080" min="100" max="8000" style="width:64px"> × <input autocomplete="off" type="number" id="ch" value="1080" min="100" max="8000" style="width:64px"> px</label>
+  </div>
+  <div class="colors">
+    <label>Background <input autocomplete="off" type="color" id="bg" value="#ffffff"></label>
+    <label><input autocomplete="off" type="checkbox" id="transparent"> Transparent</label>
   </div>
 
   <h2>Colors</h2>
-  <div class="crow"><span>Fill</span><div class="cin"><input type="color" id="fg" value="#ffffff"></div></div>
-  <div class="crow" data-modes="effect frame"><span>Outline &amp; shadow</span><div class="cin"><input type="color" id="outlineC" value="#000000"></div></div>
+  <div class="crow"><span>Fill</span><div class="cin"><input autocomplete="off" type="color" id="fg" value="#ffffff"></div></div>
+  <div class="crow" data-modes="effect frame"><span>Outline &amp; shadow</span><div class="cin"><input autocomplete="off" type="color" id="outlineC" value="#000000"></div></div>
   <div data-modes="effect frame">
     <div class="crow"><span>Presets</span><div class="chips" id="gChips"></div></div>
     <button class="ghost swap" id="gSwap">⇄ Swap colors</button>
@@ -133,7 +150,7 @@
 
   <h2>Edge text</h2>
   <div id="frameControls"></div>
-  <div class="check"><input type="checkbox" id="fccw"><label for="fccw">Run all lines counter-clockwise</label></div>
+  <div class="check"><input autocomplete="off" type="checkbox" id="fccw"><label for="fccw">Run all lines counter-clockwise</label></div>
   <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Letters run around the edge of the canvas, one per cell, and each line carries on from the end of the previous one. The cell size adjusts automatically so everything fits.</div>
 
   <h2>Pattern</h2>
@@ -143,19 +160,20 @@
   </div>
 
   <h2>Outline &amp; shadow</h2>
-  <div class="check"><input type="checkbox" id="outlineOn" checked><label for="outlineOn">Outline</label></div>
-  <div class="check"><input type="checkbox" id="shadowOn" checked><label for="shadowOn">Extruded shadow</label></div>
+  <div class="check"><input autocomplete="off" type="checkbox" id="outlineOn" checked><label for="outlineOn">Outline</label></div>
+  <div class="check"><input autocomplete="off" type="checkbox" id="shadowOn" checked><label for="shadowOn">Extruded shadow</label></div>
+  <div class="crow"><span>Outline weight</span><div class="seg" id="outlineWeight"><button type="button" data-w="2" class="on">Thin</button><button type="button" data-w="4">Medium</button><button type="button" data-w="6">Bold</button></div></div>
   <div id="styleControls"></div>
 
   <h2>Layout</h2>
-  <div class="check" data-modes="effect"><input type="checkbox" id="fit"><label for="fit">Stretch every line to the same width (sizes differ)</label></div>
-  <div class="check" data-modes="effect"><input type="checkbox" id="align" checked><label for="align">Centre all lines (off = left)</label></div>
+  <div class="check" data-modes="effect"><input autocomplete="off" type="checkbox" id="fit"><label for="fit">Stretch every line to the same width (sizes differ)</label></div>
+  <div class="check" data-modes="effect"><input autocomplete="off" type="checkbox" id="align" checked><label for="align">Centre all lines (off = left)</label></div>
   <div id="layoutControls"></div>
 
   <h2>Height variation points</h2>
   <div id="hedgeControls"></div>
   <svg id="edgeEd" viewBox="0 0 280 170" style="width:100%;touch-action:none;background:var(--bg);border:1px solid var(--line);border-radius:6px"></svg>
-  <div class="check" style="margin-top:6px"><input type="checkbox" id="edgeSmooth"><label for="edgeSmooth">Smooth curve between points</label></div>
+  <div class="check" style="margin-top:6px"><input autocomplete="off" type="checkbox" id="edgeSmooth"><label for="edgeSmooth">Smooth curve between points</label></div>
   <div class="btns" style="margin-bottom:6px">
     <button id="edgeRand" class="ghost">Randomize points</button>
     <button id="edgeFlat" class="ghost">Flatten</button>
@@ -168,18 +186,6 @@
   <h2>Letter shear</h2>
   <div id="perspControls"></div>
 
-  <h2>Canvas</h2>
-  <div class="btns" id="exportBtns">
-    <button id="exportSvg">Download SVG</button>
-    <button id="exportPng" class="ghost">Download PNG</button>
-  </div>
-  <div class="colors" style="margin-bottom:8px">
-    <label>Canvas <input type="number" id="cw" value="1080" min="100" max="8000" style="width:64px"> × <input type="number" id="ch" value="1080" min="100" max="8000" style="width:64px"> px</label>
-  </div>
-  <div class="colors">
-    <label>Background <input type="color" id="bg" value="#f4f4f2"></label>
-    <label><input type="checkbox" id="transparent"> Transparent</label>
-  </div>
 </aside>
 
 <main>
@@ -612,11 +618,9 @@ function buildLayers(warped, W, sizeOf) {
     }
     for (const ln of group) {
       const P = part(ln);
+      // the outline sits entirely outside the letter: a stroke twice as wide is drawn first and the fill covers its inner half
+      if (isOutline(ln)) els.push({ d: toPath(P), stroke: col(ln, 'outline', oc), sw: swOf(ln) });
       els.push({ d: toPath(P), fill: plain ? fill : col(ln, 'fill', fill) });
-      if (isOutline(ln)) {
-        const oc2 = col(ln, 'outline', oc);
-        els.push({ d: toPath(P), stroke: oc2, sw: strokeOf(ln) });
-      }
     }
   }
   const bb = bbox(A), pad = Math.max(0, ...lineObjs0.filter(isOutline).map(l => strokeOf(l)));
@@ -701,7 +705,7 @@ function placeFrame(cw, ch) {
     if (!ln.text.trim()) continue;
     // room to keep free inside the cell so the outline and the extruded shadow never leave the canvas
     const ol = !!ln.showOutline, sh = !!ln.showShadow && S.depth > 0, stroke = S.outW / 100 * Math.min(cW, cH);
-    const m = sh ? (ol ? stroke : 0) : (ol ? stroke / 2 : 0);
+    const m = ol ? stroke : 0;                 // the outline now sits fully outside the letter
     const L3 = S.depth * cw * 0.3, ang = S.angle * Math.PI / 180, ex = sh ? Math.cos(ang) * L3 : 0, ey = sh ? Math.sin(ang) * L3 : 0;
     const bx = gx + m + Math.max(0, -ex), by = gy + m + Math.max(0, -ey);
     const bw = Math.max(cW * 0.1, cW - 2 * gx - 2 * m - Math.abs(ex)), bh = Math.max(cH * 0.1, cH - 2 * gy - 2 * m - Math.abs(ey));
@@ -775,6 +779,8 @@ requestAnimationFrame(frame);
 
 /* ---------- reset ---------- */
 const resetRows = group => { for (const [key, , , , , val] of DEFS[group]) S['_row_' + key]._set(val); dirtyGeom = needsDraw = true; };
+function setOutlineWeight(v) { S.outW = v; document.querySelectorAll('#outlineWeight button').forEach(b => b.classList.toggle('on', +b.dataset.w === v)); needsDraw = true; }
+document.querySelectorAll('#outlineWeight button').forEach(b => b.onclick = () => setOutlineWeight(+b.dataset.w));
 const SECTION_RESETS = {
   'Lines': () => {
     lines.forEach(l => { l.scale = 1; l.track = 0; l.dy = 0; l.fill = l.outline = l.shadow = null; l.showOutline = $('outlineOn').checked; l.showShadow = $('shadowOn').checked; l.align = null; l.front = false; });
@@ -784,7 +790,7 @@ const SECTION_RESETS = {
   'Edge text': () => { resetRows('frame'); $('fccw').checked = false; },
   'Pattern': () => resetRows('prow'),
   'Outline & shadow': () => {
-    resetRows('style'); $('outlineOn').checked = true; $('shadowOn').checked = true; $('outlineC').value = '#000000'; lines.forEach(l => { l.showOutline = true; l.showShadow = true; });
+    resetRows('style'); setOutlineWeight(2); $('outlineOn').checked = true; $('shadowOn').checked = true; $('outlineC').value = '#000000'; lines.forEach(l => { l.showOutline = true; l.showShadow = true; });
     [...linesEl.children].forEach(r => r._sync && r._sync());
   },
   'Layout': () => { resetRows('layout'); $('fit').checked = false; $('align').checked = true; },
@@ -793,7 +799,7 @@ const SECTION_RESETS = {
   'Letter shear': () => resetRows('persp'),
   'Variation': () => setSeed(1),
   'Colors': () => { $('fg').value = MODE_FILL[mode]; modeFill[mode] = MODE_FILL[mode]; $('outlineC').value = '#000000'; [...linesEl.children].forEach(r => r._sync && r._sync()); },
-  'Canvas': () => { $('bg').value = '#f4f4f2'; $('transparent').checked = false; $('cw').value = 1080; $('ch').value = 1080; [...linesEl.children].forEach(r => r._sync && r._sync()); },
+  'Canvas': () => { $('bg').value = '#ffffff'; $('transparent').checked = false; $('cw').value = 1080; $('ch').value = 1080; [...linesEl.children].forEach(r => r._sync && r._sync()); },
 };
 document.querySelectorAll('aside h2').forEach(h => {
   const fn = SECTION_RESETS[h.textContent.trim()];
